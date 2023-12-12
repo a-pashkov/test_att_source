@@ -111,9 +111,10 @@ func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = checkResponse(resp)
+		err = checkResponse(resp[:c])
 		if err != nil {
-			fmt.Println("Resp1:", resp[:c])
+			//fmt.Println("Resp1:", resp[:c])
+			return nil, err
 		}
 
 		bdata = append(bdata, msg)
@@ -133,9 +134,10 @@ func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = checkResponse(resp)
+	err = checkResponse(resp[:c])
 	if err != nil {
-		fmt.Println("Resp2:", resp[:c])
+		//fmt.Println("Resp2:", resp[:c])
+		return nil, err
 	}
 
 	bdata = append(bdata, msg)
@@ -143,25 +145,30 @@ func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
 }
 
 func checkResponse(r []byte) error {
-	temp := []byte{
-		// NPL
-		126, 126, // signature
-		14, 0, // data_size
-		2, 0, // flags
-		1, 171, // crc
-		2,          // type
-		0, 0, 0, 0, // peer_address
-		0, 0, // request_id
-		// NPH
-		0, 0, // service_id
-		0, 0, // type
-		0, 0, // flags
-		0, 0, 0, 0, // request_id
-
-		0, 0, 0, 0} // error code
-	if bytes.Equal(r, temp) {
+	if len(r) != 29 ||
+		!bytes.Equal(r[0:2], []byte{0x7e, 0x7e}) ||
+		!bytes.Equal(r[2:4], []byte{0x0e, 0x00}) ||
+		!bytes.Equal(r[25:], []byte{0x00, 0x00, 0x00, 0x00}) {
+		fmt.Println(r[0:2], r[2:4], r[10:14], len(r))
 		return errors.New("wrong response")
 	}
+	/*
+		temp := []byte{
+			// NPL
+			126, 126, // signature
+			14, 0, // data_size
+			2, 0, // flags
+			1, 171, // crc
+			2,          // type
+			0, 0, 0, 0, // peer_address
+			0, 0, // request_id
+			// NPH
+			0, 0, // service_id
+			0, 0, // type
+			0, 0, // flags
+			0, 0, 0, 0, // request_id
 
+			0, 0, 0, 0} // error code
+	*/
 	return nil
 }

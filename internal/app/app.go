@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"internal/navigation"
 	"internal/ndtp"
+	"internal/wialon"
 	"net"
 	"os"
 	"strconv"
@@ -56,6 +57,8 @@ func Start() {
 	switch ptype {
 	case "ndtp":
 		client = &ndtp.Ndtp{}
+	case "wialon":
+		client = &wialon.Wialon{}
 	default:
 		fmt.Fprintf(os.Stderr, "Wrong TYPE: %s\n", ptype)
 		usageAndExit()
@@ -81,7 +84,7 @@ func Start() {
 
 func usageAndExit() {
 	msg := "Usage: rnis_protocols_emulator IP PORT TYPE ID LAT LON\n" +
-		"TYPE can be 'ndtp'"
+		"TYPE can be 'ndtp','wialon'"
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }
