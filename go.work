@@ -3,6 +3,7 @@ go 1.18
 use (
 	.
 	./internal/app
+	./internal/egtsdisp
 	./internal/navigation
 	./internal/ndtp
 	./internal/wialon

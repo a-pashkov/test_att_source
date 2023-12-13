@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"internal/egtsdisp"
 	"internal/navigation"
 	"internal/ndtp"
 	"internal/wialon"
@@ -18,17 +19,14 @@ func Start() {
 		usageAndExit()
 	}
 
-	ip := os.Args[1]
-	if net.ParseIP(ip) == nil {
-		fmt.Fprintf(os.Stderr, "IP must be valid IPv4 address\n")
-		usageAndExit()
-	}
+	host := os.Args[1]
 
-	port, err := strconv.Atoi(os.Args[2])
-	if err != nil || port < 0 || port > 65535 {
+	port0, err := strconv.Atoi(os.Args[2])
+	if err != nil || port0 < 0 || port0 > 65535 {
 		fmt.Fprintf(os.Stderr, "PORT must be 0 - 65535\n")
 		usageAndExit()
 	}
+	port := os.Args[2]
 
 	id, err := strconv.Atoi(os.Args[4])
 	if err != nil {
@@ -59,6 +57,8 @@ func Start() {
 		client = &ndtp.Ndtp{}
 	case "wialon":
 		client = &wialon.Wialon{}
+	case "egts":
+		client = &egtsdisp.EgtsDisp{}
 	default:
 		fmt.Fprintf(os.Stderr, "Wrong TYPE: %s\n", ptype)
 		usageAndExit()
@@ -67,7 +67,7 @@ func Start() {
 
 	fmt.Println("Data:", p)
 
-	conn, err := net.Dial("tcp", net.JoinHostPort("127.0.0.1", "4444"))
+	conn, err := net.Dial("tcp", net.JoinHostPort(host, port))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Connection error: %s\n", err)
 		os.Exit(1)
@@ -84,7 +84,7 @@ func Start() {
 
 func usageAndExit() {
 	msg := "Usage: rnis_protocols_emulator IP PORT TYPE ID LAT LON\n" +
-		"TYPE can be 'ndtp','wialon'"
+		"TYPE can be 'ndtp', 'wialon', 'egts'"
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }
