@@ -17,12 +17,12 @@ type EgtsDisp struct {
 	rid uint16
 }
 
-func (n *EgtsDisp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
+func (n *EgtsDisp) Send(p *navigation.Packet, conn net.Conn) ([][]byte, error) {
 	var bdata [][]byte
 
 	msg := n.formEgtsPacket(p)
 
-	_, err := conn.Write(*msg)
+	_, err := conn.Write(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -37,14 +37,14 @@ func (n *EgtsDisp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) 
 		return nil, err
 	}
 
-	bdata = append(bdata, *msg)
-	return &bdata, nil
+	bdata = append(bdata, msg)
+	return bdata, nil
 }
 
-func (e *EgtsDisp) formEgtsPacket(p *navigation.Packet) *[]byte {
+func (e *EgtsDisp) formEgtsPacket(p *navigation.Packet) []byte {
 	rec := e.formEgtsRecord(p)
 
-	packet := make([]byte, 11+len(*rec)+2)
+	packet := make([]byte, 11+len(rec)+2)
 
 	packet[0] = 0x01 //PRV
 	packet[1] = 0x00 //SKID
@@ -52,7 +52,7 @@ func (e *EgtsDisp) formEgtsPacket(p *navigation.Packet) *[]byte {
 	packet[3] = 0x0b //HL
 	packet[4] = 0x00 //HE
 
-	fdl := len(*rec)
+	fdl := len(rec)
 	binary.LittleEndian.PutUint16(packet[5:7], uint16(fdl))
 
 	binary.LittleEndian.PutUint16(packet[7:9], uint16(e.pid))
@@ -65,23 +65,23 @@ func (e *EgtsDisp) formEgtsPacket(p *navigation.Packet) *[]byte {
 	hcs := crc8.Checksum(packet[0:10], table8)
 	packet[10] = hcs
 
-	copy(packet[11:], *rec)
+	copy(packet[11:], rec)
 
 	params16 := crc16.CRC16_CCITT_FALSE
 	table16 := crc16.MakeTable(params16)
-	sfrcs := crc16.Checksum(*rec, table16)
-	binary.LittleEndian.PutUint16(packet[11+len(*rec):], sfrcs)
+	sfrcs := crc16.Checksum(rec, table16)
+	binary.LittleEndian.PutUint16(packet[11+len(rec):], sfrcs)
 
-	return &packet
+	return packet
 }
 
-func (e *EgtsDisp) formEgtsRecord(p *navigation.Packet) *[]byte {
+func (e *EgtsDisp) formEgtsRecord(p *navigation.Packet) []byte {
 	srData := e.formEgtsSrPosData(p)
 	sr := e.formEgtsSr(0x10, srData)
 
-	record := make([]byte, 11+len(*sr))
+	record := make([]byte, 11+len(sr))
 
-	rl := uint16(len(*sr))
+	rl := uint16(len(sr))
 	binary.LittleEndian.PutUint16(record[0:2], rl)
 
 	rn := uint16(e.rid)
@@ -91,7 +91,7 @@ func (e *EgtsDisp) formEgtsRecord(p *navigation.Packet) *[]byte {
 	rfl := byte(0x01) // OBFE = 1
 	record[4] = rfl
 
-	binary.LittleEndian.PutUint32(record[5:9], p.AttId)
+	binary.LittleEndian.PutUint32(record[5:9], uint32(p.AttId))
 
 	sst := byte(0x02)
 	record[9] = sst
@@ -99,31 +99,31 @@ func (e *EgtsDisp) formEgtsRecord(p *navigation.Packet) *[]byte {
 	rst := byte(0x02)
 	record[10] = rst
 
-	copy(record[11:], *sr)
+	copy(record[11:], sr)
 
-	return &record
+	return record
 }
 
-func (e *EgtsDisp) formEgtsSr(t uint8, d *[]byte) *[]byte {
-	srl := len(*d)
+func (e *EgtsDisp) formEgtsSr(t uint8, d []byte) []byte {
+	srl := len(d)
 	sr := make([]byte, srl+3)
 	sr[0] = byte(t)
 	binary.LittleEndian.PutUint16(sr[1:3], uint16(srl))
-	copy(sr[3:], *d)
+	copy(sr[3:], d)
 
-	return &sr
+	return sr
 }
 
-func (e *EgtsDisp) formEgtsSrPosData(p *navigation.Packet) *[]byte {
+func (e *EgtsDisp) formEgtsSrPosData(p *navigation.Packet) []byte {
 	srBody := make([]byte, 21)
 
 	ntm := uint32(p.Time.Unix() - 1262304000)
 	binary.LittleEndian.PutUint32(srBody[0:4], ntm)
 
-	lat := uint32(math.Abs(float64(p.Lat)) / 90 * 0xffffffff)
+	lat := uint32(math.Abs(p.Lat) / 90 * 0xffffffff)
 	binary.LittleEndian.PutUint32(srBody[4:8], lat)
 
-	lon := uint32(math.Abs(float64(p.Lon)) / 180 * 0xffffffff)
+	lon := uint32(math.Abs(p.Lon) / 180 * 0xffffffff)
 	binary.LittleEndian.PutUint32(srBody[8:12], lon)
 
 	var flags, alte, lohs, lahs, mv, bb, cs, fix, vld byte
@@ -167,7 +167,7 @@ func (e *EgtsDisp) formEgtsSrPosData(p *navigation.Packet) *[]byte {
 	srBody[19] = din
 	srBody[20] = src
 
-	return &srBody
+	return srBody
 }
 
 func checkResponse(r []byte) error {

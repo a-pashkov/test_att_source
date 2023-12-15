@@ -5,6 +5,7 @@ use (
 	./internal/app
 	./internal/egtsdisp
 	./internal/navigation
+	./internal/navtelecom
 	./internal/ndtp
 	./internal/wialon
 )

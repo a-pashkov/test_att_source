@@ -14,7 +14,7 @@ type Wialon struct {
 	auth bool
 }
 
-func (n *Wialon) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
+func (n *Wialon) Send(p *navigation.Packet, conn net.Conn) ([][]byte, error) {
 	var bdata [][]byte
 	if !n.auth {
 		msg := []byte(fmt.Sprintf("#L#%d;NA\r\n", p.AttId))
@@ -71,7 +71,7 @@ func (n *Wialon) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
 		return nil, err
 	}
 
-	return &bdata, nil
+	return bdata, nil
 }
 
 func checkResponse(r []byte) error {

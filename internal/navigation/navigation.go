@@ -7,7 +7,7 @@ import (
 )
 
 type Packet struct {
-	AttId uint32
+	AttId uint64
 	Time  time.Time
 	Lon   float64
 	Lat   float64
@@ -19,5 +19,5 @@ func (p Packet) String() string {
 }
 
 type NavProto interface {
-	Send(*Packet, net.Conn) (*[][]byte, error)
+	Send(*Packet, net.Conn) ([][]byte, error)
 }

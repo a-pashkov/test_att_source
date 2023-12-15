@@ -28,10 +28,10 @@ type Ndtp struct {
 	packetId uint16
 }
 
-func (n *Ndtp) formNpl(nph *[]byte) *[]byte {
-	size := len(*nph)
+func (n *Ndtp) formNpl(nph []byte) []byte {
+	size := len(nph)
 	table16 := crc16.MakeTable(crc16.CRC16_MODBUS)
-	cs := crc16.Checksum(*nph, table16)
+	cs := crc16.Checksum(nph, table16)
 
 	npl := make([]byte, nplHeaderLen)
 	copy(npl[0:2], nplSignature)
@@ -44,10 +44,10 @@ func (n *Ndtp) formNpl(nph *[]byte) *[]byte {
 
 	n.packetId += 1
 
-	return &npl
+	return npl
 }
 
-func (n *Ndtp) formNphAuth(p *navigation.Packet) *[]byte {
+func (n *Ndtp) formNphAuth(p *navigation.Packet) []byte {
 	nphHeader := make([]byte, nphHeaderLen)
 	binary.LittleEndian.PutUint16(nphHeader[0:2], nphSrvGenericControls) // NPH_SRV_GENERIC_CONTROLS = 0
 	binary.LittleEndian.PutUint16(nphHeader[2:4], nphSgcConnRequest)     // NPH_SGC_CONN_REQUEST = 100
@@ -55,17 +55,17 @@ func (n *Ndtp) formNphAuth(p *navigation.Packet) *[]byte {
 	binary.LittleEndian.PutUint16(nphHeader[6:10], n.packetId)           // RequestID
 
 	nphData := make([]byte, 14)
-	binary.LittleEndian.PutUint16(nphData[0:2], 6)               // _VerHi
-	binary.LittleEndian.PutUint16(nphData[2:4], 2)               // _VerLo
-	binary.BigEndian.PutUint16(nphData[4:6], 0b0000000100000010) // _Flags
-	binary.LittleEndian.PutUint32(nphData[6:10], p.AttId)        // PeerID
-	binary.LittleEndian.PutUint32(nphData[10:14], 0x00000400)    // MaxSize
+	binary.LittleEndian.PutUint16(nphData[0:2], 6)                // _VerHi
+	binary.LittleEndian.PutUint16(nphData[2:4], 2)                // _VerLo
+	binary.BigEndian.PutUint16(nphData[4:6], 0b0000000100000010)  // _Flags
+	binary.LittleEndian.PutUint32(nphData[6:10], uint32(p.AttId)) // PeerID
+	binary.LittleEndian.PutUint32(nphData[10:14], 0x00000400)     // MaxSize
 
 	nph := append(nphHeader, nphData...)
-	return &nph
+	return nph
 }
 
-func (n *Ndtp) formNphNavdata(p *navigation.Packet) *[]byte {
+func (n *Ndtp) formNphNavdata(p *navigation.Packet) []byte {
 	nphHeader := make([]byte, nphHeaderLen)
 	binary.LittleEndian.PutUint16(nphHeader[0:2], nphSrvNavdata)
 	binary.LittleEndian.PutUint16(nphHeader[2:4], nphSndRealtime)
@@ -89,17 +89,17 @@ func (n *Ndtp) formNphNavdata(p *navigation.Packet) *[]byte {
 	nphData[14] = flags
 
 	nph := append(nphHeader, nphData...)
-	return &nph
+	return nph
 }
 
-func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
+func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) ([][]byte, error) {
 	var bdata [][]byte
 	var msg []byte
-	var npl, nph *[]byte
+	var npl, nph []byte
 	if n.packetId == 0 {
 		nph = n.formNphAuth(p)
 		npl = n.formNpl(nph)
-		msg = append(*npl, *nph...)
+		msg = append(npl, nph...)
 
 		_, err := conn.Write(msg)
 		if err != nil {
@@ -122,7 +122,7 @@ func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
 
 	nph = n.formNphNavdata(p)
 	npl = n.formNpl(nph)
-	msg = append(*npl, *nph...)
+	msg = append(npl, nph...)
 
 	_, err := conn.Write(msg)
 	if err != nil {
@@ -141,7 +141,7 @@ func (n *Ndtp) Send(p *navigation.Packet, conn net.Conn) (*[][]byte, error) {
 	}
 
 	bdata = append(bdata, msg)
-	return &bdata, nil
+	return bdata, nil
 }
 
 func checkResponse(r []byte) error {

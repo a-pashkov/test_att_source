@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"internal/egtsdisp"
 	"internal/navigation"
+	"internal/navtelecom"
 	"internal/ndtp"
 	"internal/wialon"
 	"net"
@@ -28,9 +29,9 @@ func Start() {
 	}
 	port := os.Args[2]
 
-	id, err := strconv.Atoi(os.Args[4])
+	id, err := strconv.ParseUint(os.Args[4], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ID must be integer\n")
+		fmt.Fprintf(os.Stderr, "ID must be uint64\n")
 		usageAndExit()
 	}
 
@@ -48,7 +49,7 @@ func Start() {
 
 	tm := time.Now()
 
-	p := navigation.Packet{AttId: uint32(id), Time: tm, Lat: lat, Lon: lon}
+	p := navigation.Packet{AttId: id, Time: tm, Lat: lat, Lon: lon}
 
 	ptype := os.Args[3]
 	var client navigation.NavProto
@@ -59,6 +60,8 @@ func Start() {
 		client = &wialon.Wialon{}
 	case "egts":
 		client = &egtsdisp.EgtsDisp{}
+	case "navtelecom":
+		client = &navtelecom.Navtelecom{}
 	default:
 		fmt.Fprintf(os.Stderr, "Wrong TYPE: %s\n", ptype)
 		usageAndExit()
@@ -84,13 +87,13 @@ func Start() {
 
 func usageAndExit() {
 	msg := "Usage: rnis_protocols_emulator IP PORT TYPE ID LAT LON\n" +
-		"TYPE can be 'ndtp', 'wialon', 'egts'"
+		"TYPE can be 'ndtp', 'wialon', 'egts', 'navtelecom'"
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }
 
-func showBinPacks(data *[][]byte) {
-	for i, d := range *data {
+func showBinPacks(data [][]byte) {
+	for i, d := range data {
 		fmt.Printf("Packet %d:\n%s", i, hex.Dump(d))
 	}
 }
